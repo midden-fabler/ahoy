@@ -1,8 +1,8 @@
 /-  *ahoy
-/+  ahoy, rudder, ahoy-style
+/+  rudder, ahoy-style, sigil-svg=sigil
 ::
-^-  (page:rudder records command)
-|_  [=bowl:gall =order:rudder records]
+^-  (page:rudder records-1 command)
+|_  [=bowl:gall =order:rudder records-1]
 ++  argue
   |=  [headers=header-list:http body=(unit octs)]
   ^-  $@(brief:rudder command)
@@ -10,15 +10,13 @@
     ?~(body ~ (frisk:rudder q.u.body))
   ?~  what=(~(get by args) 'what')  ~
   ?+    u.what  ~
-      %add-watch
+      %set-heartbeat
     ?~  who=(slaw %p (~(gut by args) 'who' ''))     ~
-    ?~  when=(slaw %dr (~(gut by args) 'when' ''))  ~
-    [%add-watch u.who u.when]
-  ::
-      %del-watch
-    ?~  who=(slaw %p (~(gut by args) 'who' ''))  ~
-    [%del-watch u.who]
+    ?~  when=(slaw %dr (~(gut by args) 'when' ''))
+      [%set-heartbeat u.who ~]
+    [%set-heartbeat u.who `u.when]
   ==
+::
 ::
 ++  final  (alert:rudder (cat 3 '/' dap.bowl) build)
 ++  build
@@ -72,21 +70,27 @@
             ::  table header
             ;tr(style "font-weight: bold")
               ;td(align "center"):"~"
-              ;td(align "center"):"@p"
+              ;td(align "center"):"status"
+              ;td(align "center"):"ship"
               ;td(align "center"):"notify after @dr"
               ;td(align "center"):"last-contact `@dr"
             ==
             ::  first row for adding new ships
             ;tr
               ;td
-                ;button(type "submit", name "what", value "add-watch"):"+"
+                ;button(type "submit", name "what", value "set-heartbeat"):"+"
               ==
+              ::  status
+              ;td(align "center"):"~"
+              ::  ship
               ;td
                 ;input(type "text", name "who", placeholder "~sampel");
               ==
+              ::  notify
               ;td
                 ;input(type "text", name "when", placeholder "~d1.h12.m30");
               ==
+              ::
               ;td(align "center"):"~"
             ==  ::  first row
           ==    ::  form
@@ -96,32 +100,59 @@
     ==    ::  html
   ++  work
     ^-  (list manx)
-    %+  turn  ~(tap by watchlist)
+    %+  turn  (sort ~(tap by heartbeats) aor)
     |=  [=ship t=@dr]
+    =/  threshold=(unit @dr)  (~(get by heartbeats) ship)
+    =/  last=(unit @dr)
+      ?~  last=(last-contact ship)  ~
+      `(sub now.bowl u.last)
     ;tr
       ;td
-        ::  %del-watch
+        ::  %set-heartbeat
         ;form(method "post")
-          ;button(type "submit", name "what", value "del-watch"):"-"
+          ;button(type "submit", name "what", value "set-heartbeat"):"-"
           ;input(type "hidden", name "who", value "{(scow %p ship)}");
         ==
-        ::  ship
-        ;td
-          ; {(scow %p ship)}
+        ::  status
+        ::
+        ;td(align "center")
+          ;+  ?:  (is-down ship (last-contact ship))
+                ;p.red:"⬤"
+              ;p.green:"⬤"
         ==
+        ::  ship
+        ;td(align "right"):"{(scow %p ship)}"
         ::  when to notify
         ;form(method "post")
           ;td
-            ;input(type "hidden", name "what", value "add-watch");
+            ;input(type "hidden", name "what", value "set-heartbeat");
             ;input(type "hidden", name "who", value "{(scow %p ship)}");
-            ;input(type "text", name "when", value "{(scow %dr t)}");
+            ;input(type "text", name "when", value "{?~(threshold ~ (scow %dr u.threshold))}");
           ==
         ==
         ::  last-contact
         ;td(align "right")
-          ; {<(~(last-contact ahoy bowl) ship)>}
+          ;+  ?~  last
+                ;p:"~"
+              ;p:"{<u.last>}"
         ==
       ==
     ==
+  ::
+  ++  last-contact
+    |=  =ship
+    ^-  (unit @da)
+    =+  [our=(scot %p our.bowl) now=(scot %da now.bowl) ship=(scot %p ship)]
+    .^((unit @da) %ax /[our]//[now]/peers/[ship]/last-contact)
+  ::
+  ++  is-down
+    |=  [=ship last=(unit @da)]
+    ^-  ?
+    ?:  =(ship our.bowl)
+      %|
+    ?~  last
+      %&
+    =/  threshold=@dr  (~(gut by heartbeats) ship default-threshold)
+    (gte `@dr`(sub now.bowl u.last) threshold)
   --  ::  |^
 --    ::  |_

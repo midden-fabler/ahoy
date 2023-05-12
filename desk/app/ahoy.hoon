@@ -5,26 +5,32 @@
 ::    and when that ship is subsequently contacted
 ::
 ::  usage:
-::    :ahoy|add-watch ~sampel ~d1
-::    :ahoy|del-watch ~sampel
-::    :ahoy|set-update-interval ~m30
-::    -ahoy!ahoy-add-ships [~sampel ~sampel-palnet ~] ~h1
-::    -ahoy!ahoy-del-ships [~sampel ~sampel-palnet ~]
+::    :ahoy|set-heartbeat ~sampel `~d1
+::    :ahoy|set-heartbeat ~sampel ~
+::    :ahoy|set-send-alerts |
+::    :ahoy|set-run-interval ~m30
+::    :ahoy|set-default-threshold ~m30
+::    -ahoy!ahoy-set-heartbeats [~sampel ~sampel-palnet ~] `~h1
+::    -ahoy!ahoy-set-heartbeats [~sampel ~sampel-palnet ~] ~
 ::
 ::  scrys:
-::    .^((map @p @dr) %gx /=ahoy=/watchlist/noun)
-::    .^((set ship) %gx /=ahoy=/watchlist/ships/noun)
-::    .^(@dr %gx /=ahoy=/update-interval/noun)
+::    .^((map @p (unit @da)) %gx /=ahoy=/downed/noun)
+::    .^((map @p @dr) %gx /=ahoy=/heartbeats/noun)
+::    .^(? %gx /=ahoy=/send-alerts/noun)
+::    .^(@dr %gx /=ahoy=/run-interval/noun)
+::    .^(@dr %gx /=ahoy=/default-threshold/noun)
 ::
 /-  *ahoy, hark
-/+  default-agent, dbug, rudder, ahoy 
-/~  pages  (page:rudder records command)  /app/ahoy/webui
+/+  default-agent, dbug, rudder
+/~  pages  (page:rudder records-1 command)  /app/ahoy/webui
 =>
   |%
   +$  card  $+(card card:agent:gall)
+  +$  versioned-state  $%(state-0 state-1)
   +$  state-0  [%0 records]
+  +$  state-1  [%1 records-1]
   --
-=|  state-0
+=|  state-1
 =*  state  -
 %-  agent:dbug
 ^-  agent:gall
@@ -35,17 +41,23 @@
       cor   ~(. +> [bowl ~])
   ++  on-init
     ^-  (quip card _this)
-    =+  sponsor=(sein:title [our now our]:bowl)
-    =^  cards  this
-      (on-poke ahoy-command+!>(`command`[%add-watch sponsor ~d1]))
     :_  this
-    :*  [%pass /eyre/connect %arvo %e %connect [~ /[dap.bowl]] dap.bowl]
-        (set-timer update-interval)
-        cards
-    ==
+    :-  (set-timer:cor run-interval)
+    [%pass /eyre %arvo %e %connect `/[dap.bowl] dap.bowl]~
   ::
   ++  on-save  !>(state)
-  ++  on-load  |=(=vase `this(state !<(state-0 vase)))
+  ++  on-load
+    |=  =vase
+    ^-  (quip card _this)
+    =+  !<(old=versioned-state vase)
+    ?-    -.old
+        %0
+      :-  [(set-timer:cor run-interval) cancel-timers:cor]
+      this(heartbeats heartbeats.old, run-interval run-interval.old)
+    ::
+      %1  `this(state old)
+    ==
+  ::
   ++  on-poke
     |=  [=mark =vase]
     ^-  (quip card _this)
@@ -53,18 +65,20 @@
     ?+    mark  (on-poke:def mark vase)
         %ahoy-command
       =+  !<(cmd=command vase)
-      ?-  -.cmd
-        %set-update-interval  `this(update-interval t.cmd)
-        %del-watch  `this(watchlist (~(del by watchlist) ship.cmd))
+      ?-    -.cmd
+          %set-send-alerts        `this(send-alerts flag.cmd)
+          %set-default-threshold  `this(default-threshold t.cmd)
       ::
-          %add-watch
-        =/  ss=(unit ship-state:ames)
-          (~(ship-state ahoy bowl) ship.cmd)
-        ?~  ss
-          ~&  >>  [%ahoy '%alien ship not added']
-          [~ this]
-        :-  [(send-ping:cor ship.cmd)]~
-        this(watchlist (~(put by watchlist) ship.cmd t.cmd))
+          %set-heartbeat
+        ?~  t.cmd
+          =.  downed  (~(del by downed) ship.cmd)
+          `this(heartbeats (~(del by heartbeats) ship.cmd))
+        `this(heartbeats (~(put by heartbeats) ship.cmd u.t.cmd))
+      ::
+          %set-run-interval
+        =.  run-interval  t.cmd
+        :_  this
+        [(set-timer:cor run-interval) cancel-timers:cor]
       ==
     ::
         %handle-http-request
@@ -95,97 +109,162 @@
   ++  on-arvo
     |=  [=wire =sign-arvo]
     ^-  (quip card _this)
-    ?+  wire  (on-arvo:def wire sign-arvo)
-      [%ahoy @ ~]         [~ this]
-      [%eyre %connect ~]  [~ this]
-    ::
-        [%update-interval ~]
-      =^  cards  state  abet:on-update-interval:cor
-      [cards this]
-    ==
+    =^  cards  state  abet:(arvo:cor wire sign-arvo)
+    [cards this]
   ::
   ++  on-peek
     |=  =path
     ^-  (unit (unit cage))
     ?+  path  (on-peek:def path)
-      [%x %watchlist ~]         ``noun+!>(watchlist)
-      [%x %update-interval ~]   ``noun+!>(update-interval)
-      [%x %watchlist %ships ~]  ``noun+!>(~(key by watchlist))
+      [%x %downed ~]             ``noun+!>(downed)
+      [%x %heartbeats ~]         ``noun+!>(heartbeats)
+      [%x %send-alerts ~]        ``noun+!>(send-alerts)
+      [%x %run-interval ~]       ``noun+!>(run-interval)
+      [%x %default-threshold ~]  ``noun+!>(default-threshold)
     ==
   ::
   ++  on-agent
     |=  [=(pole knot) =sign:agent:gall]
     ^-  (quip card _this)
-    ?+  pole  ~|(bad-agent-wire/pole !!)
-      [%ping @ ~]  `this
-      [%yoho ~]    `this
-    ::
-        [%hark ~]
-      ?.  ?=(%poke-ack -.sign)  (on-agent:def pole sign)
-      ?~  p.sign  [~ this]
-      ((slog 'ahoy: failed to notify' u.p.sign) [~ this])
+    ?+    pole  ~|(bad-agent-wire/pole !!)
+        [%hark ~]  `this
+        [%ping sent=@ ~]
+      ?:  (~(has by downed) src.bowl)
+        =^  cards  state
+          abet:(handle-revived:cor src.bowl)
+        [cards this]
+      [~ this]
     ==
-  ++  on-fail   on-fail:def
+  ++  on-fail  on-fail:def
   --
 |_  [=bowl:gall cards=(list card)]
 +*  cor   .
 ++  abet  [(flop cards) state]
 ++  emit  |=(=card cor(cards [card cards]))
-++  emil  |=(caz=(list card) cor(cards (welp (flop caz) cards)))
-++  set-timer
-  |=  t=@dr  ^-  card
-  [%pass /update-interval %arvo %b %wait (add t now.bowl)]
+++  set-timer  |=(t=@dr [%pass /interval %arvo %b %wait (add t now.bowl)])
+++  cancel-timers
+  ^-  (list card)
+  =+  [our=(scot %p our.bowl) now=(scot %da now.bowl)]
+  %+  murn
+    .^((list [@da duct]) %bx /[our]//[now]/debug/timers)
+  |=  [t=@da =duct]
+  ?~  duct  ~
+  ?.  ?=([%gall %use %ahoy @ @ @ ~] i.duct)
+    ~
+  `[%pass t.t.t.t.t.i.duct %arvo %b %rest t]
 ::
 ++  send-ping
-  |=  =ship  ^-  card
-  [%pass /ping/(scot %p ship) %agent [ship %ping] %poke noun+!>(~)]
-::
-++  on-update-interval
+  |=  =ship
   ^+  cor
-  ::  reset timer
-  =.  cor  (emit (set-timer update-interval))
-  ::  send pings
-  =.  cor
-    %-  emil
-    %+  turn  ~(tap in ~(key by watchlist))
-    |=(=ship (send-ping ship))
-  =/  down  down-status
-  ::  send notifications
-  =.  cor
-    %-  emil
-    %-  zing
-    %+  turn  ~(tap in down)
-    |=(=ship (send-hark ship))
-  ::  add to %yoho
-  %-  emil
-  %+  turn  ~(tap in down)
-  |=  =ship
-  =/  =cage  yoho-command+!>([%add-watch ship])
-  [%pass /yoho %agent [our.bowl %yoho] %poke cage]
+  ?:  =(ship our.bowl)  cor
+  %-  emit
+  [%pass /ping/(scot %da now.bowl) %agent [ship %ping] %poke noun+!>(~)]
 ::
-++  down-status
-  ^-  (set ship)
-  %-  silt
-  %+  murn  ~(tap in ~(key by watchlist))
+++  arvo
+  |=  [=(pole knot) =sign-arvo]
+  ^+  cor
+  ?+    pole  ~|([%bad-arvo-pole pole] !!)
+      [%eyre ~]  cor
+      [%interval ~]
+    ?>  ?=([%behn %wake *] sign-arvo)
+    ?^  error.sign-arvo
+      %-  (slog '%ahoy %timer-error' u.error.sign-arvo)
+      (emit (set-timer run-interval))
+    on-interval
+  ==
+::
+++  handle-revived
   |=  =ship
-  =/  when=(unit @dr)  (~(last-contact ahoy bowl) ship)
-  ?~  when  ~
-  ?.  (gte u.when (~(got by watchlist) ship))
-    ~
-  `ship
+  ^+  cor
+  =/  old=(unit @da)  (~(got by downed) ship)
+  =.  downed          (~(del by downed) ship)
+  ?.  (~(has by heartbeats) ship)
+    cor
+  =/  msg=cord
+    %-  crip
+    =/  time=tape  ?~(old "unknown" "{<`@dr`(sub now.bowl u.old)>}")
+    "has been contacted. Downtime: {time}"
+  (send-hark ship msg)
+
+++  on-interval
+  |^  ^+  cor
+      ::  reset timer
+      =.  cor  (emit (set-timer run-interval))
+      =/  ships=(list ship)  ~(tap in ~(key by heartbeats))
+      |-  ^+  cor
+      ?~  ships
+        cor
+      =/  last=(unit @da)  (last-contact i.ships)
+      =/  down=?  (is-down i.ships last)
+      ::  revived
+      =?  cor  &(!down (~(has by downed) i.ships))
+        (handle-revived i.ships)
+      ::  downed
+      =?  cor  &(down !(~(has by downed) i.ships))
+        (handle-downed i.ships last)
+      ::  maybe ping
+      =?  cor  !(pumping i.ships)
+        (send-ping i.ships)
+      $(ships t.ships)
+  ::
+  ++  last-contact
+    |=  =ship
+    ^-  (unit @da)
+    =+  [our=(scot %p our.bowl) now=(scot %da now.bowl) who=(scot %p ship)]
+    .^((unit @da) %ax /[our]//[now]/peers/[who]/last-contact)
+  ::
+  ++  is-down
+    |=  [=ship last=(unit @da)]
+    ^-  ?
+    ?:  =(ship our.bowl)
+      %|
+    ?~  last
+      %&
+    =/  threshold=@dr  (~(got by heartbeats) ship)
+    (gte `@dr`(sub now.bowl u.last) threshold)
+  ::
+  ++  handle-downed
+    |=  [=ship last=(unit @da)]
+    ^+  cor
+    =.  downed  (~(put by downed) ship last)
+    =/  msg=cord
+      %-  crip
+      =/  time=tape  ?~(last "unknown" "{<`@dr`(sub now.bowl u.last)>}")
+      "has not been contacted in {time}"
+    (send-hark ship msg)
+  ::
+  ++  pumping
+    |=  =ship
+    ^-  ?
+    ?.  (~(has in peers) ship)
+      %|
+    =+  [our=(scot %p our.bowl) now=(scot %da now.bowl) ship=(scot %p ship)]
+    =+  .^(=ship-state:ames %ax /[our]//[now]/peers/[ship])
+    ?:  ?=([%known *] ship-state)
+      %-  ~(any by snd.ship-state)
+      |=  m=message-pump-state:ames
+      !=(~ next-wake.packet-pump-state.m)
+    ?>  ?=([%alien *] ship-state)
+    ?~(messages.ship-state %| %&)
+  ::
+  ++  peers  ~+
+    ^-  (set ship)
+    =+  [our=(scot %p our.bowl) now=(scot %da now.bowl)]
+    %~  key  by
+    .^((map ship ?(%alien %known)) %ax /[our]//[now]/peers)
+  --
 ::
 ++  send-hark
-  |=  [who=ship]
-  ^-  (list card)
+  |=  [who=ship msg=cord]
+  ^+  cor
+  ?.  send-alerts  cor
   ?.  .^(? %gu /(scot %p our.bowl)/hark/(scot %da now.bowl)/$)
-    ~
-  =/  when=@dr  (need (~(last-contact ahoy bowl) who))
-  =/  con=(list content:hark)
-    =-  [ship+who - ~]
-    emph+(crip " has not been contacted in {<when>}")
+    cor
+  %-  emit
+  =/  con=(list content:hark)  [ship+who emph+msg ~]
   =/  =id:hark      (end 7 (shas %ahoy-notification eny.bowl))
   =/  =rope:hark    [~ ~ q.byk.bowl /(scot %p who)/[dap.bowl]]
   =/  =action:hark  [%add-yarn & & id rope now.bowl con /[dap.bowl] ~]
   =/  =cage         [%hark-action !>(action)]
-  [%pass /hark %agent [our.bowl %hark] %poke cage]~
+  [%pass /hark %agent [our.bowl %hark] %poke cage]
 --
