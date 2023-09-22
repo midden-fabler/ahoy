@@ -115,7 +115,7 @@
   ^-  (list card)
   ?.  .^(? %gu /(scot %p our.bowl)/hark/(scot %da now.bowl)/$)
     ~
-  =/  con=(list content:hark)  [ship+who emph+' has sunk' ~]
+  =/  con=(list content:hark)  [ship+who ' has sunk' ~]
   =/  =id:hark      (end 7 (shas %bord-notification eny.bowl))
   =/  =rope:hark    [~ ~ q.byk.bowl /(scot %p who)/[dap.bowl]]
   =/  =action:hark  [%add-yarn & & id rope now.bowl con /[dap.bowl] ~]

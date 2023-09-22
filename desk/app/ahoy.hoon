@@ -38,7 +38,7 @@
   |_  =bowl:gall
   +*  this  .
       def   ~(. (default-agent this %|) bowl)
-      cor   ~(. +> [bowl ~])
+      cor   ~(. +> bowl)
   ++  on-init
     ^-  (quip card _this)
     :_  this
@@ -52,10 +52,10 @@
     =+  !<(old=versioned-state vase)
     ?-    -.old
         %0
-      :-  [(set-timer:cor run-interval) cancel-timers:cor]
+      :-  reset-timer:cor
       this(heartbeats heartbeats.old, run-interval run-interval.old)
     ::
-      %1  `this(state old)
+      %1  [reset-timer:cor this(state old)]
     ==
   ::
   ++  on-poke
@@ -77,8 +77,7 @@
       ::
           %set-run-interval
         =.  run-interval  t.cmd
-        :_  this
-        [(set-timer:cor run-interval) cancel-timers:cor]
+        [reset-timer:cor this]
       ==
     ::
         %handle-http-request
@@ -137,11 +136,16 @@
     ==
   ++  on-fail  on-fail:def
   --
-|_  [=bowl:gall cards=(list card)]
+=|  cards=(list card)
+|_  =bowl:gall
 +*  cor   .
 ++  abet  [(flop cards) state]
 ++  emit  |=(=card cor(cards [card cards]))
 ++  set-timer  |=(t=@dr [%pass /interval %arvo %b %wait (add t now.bowl)])
+++  reset-timer
+  ^-  (list card)
+  (welp cancel-timers (set-timer run-interval)^~)
+::
 ++  cancel-timers
   ^-  (list card)
   =+  [our=(scot %p our.bowl) now=(scot %da now.bowl)]
@@ -183,7 +187,7 @@
   =/  msg=cord
     %-  crip
     =/  time=tape  ?~(old "unknown" "{<`@dr`(sub now.bowl u.old)>}")
-    "has been contacted. Downtime: {time}"
+    " has been contacted. Downtime: {time}"
   (send-hark ship msg)
 
 ++  on-interval
@@ -230,7 +234,7 @@
     =/  msg=cord
       %-  crip
       =/  time=tape  ?~(last "unknown" "{<`@dr`(sub now.bowl u.last)>}")
-      "has not been contacted in {time}"
+      " has not been contacted in {time}"
     (send-hark ship msg)
   ::
   ++  pumping
@@ -261,7 +265,7 @@
   ?.  .^(? %gu /(scot %p our.bowl)/hark/(scot %da now.bowl)/$)
     cor
   %-  emit
-  =/  con=(list content:hark)  [ship+who emph+msg ~]
+  =/  con=(list content:hark)  [ship+who msg ~]
   =/  =id:hark      (end 7 (shas %ahoy-notification eny.bowl))
   =/  =rope:hark    [~ ~ q.byk.bowl /(scot %p who)/[dap.bowl]]
   =/  =action:hark  [%add-yarn & & id rope now.bowl con /[dap.bowl] ~]

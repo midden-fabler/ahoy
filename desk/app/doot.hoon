@@ -23,7 +23,7 @@
   |_  =bowl:gall
   +*  this  .
       def   ~(. (default-agent this %|) bowl)
-      cor   ~(. +> [bowl ~])
+      cor   ~(. +> bowl)
   ++  on-init
     ^-  (quip card _this)
     [~[connect:cor watch-chat-ui:cor] this(trigger '.')]
@@ -66,7 +66,8 @@
     ==
   ++  on-fail  on-fail:def
   --
-|_  [=bowl:gall cards=(list card)]
+=|  cards=(list card)
+|_  =bowl:gall
 ++  cor   .
 ++  abet  [(flop cards) state]
 ++  emit  |=(=card cor(cards [card cards]))

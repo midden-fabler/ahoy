@@ -131,7 +131,7 @@
   ?.  .^(? %gu /(scot %p our.bowl)/hark/(scot %da now.bowl)/$)  ~
   =/  con=(list content:hark)
     =-  [ship+who - ~]
-    emph+(crip " has been hailed successfully")
+    ' has been hailed successfully'
   =/  =id:hark      (end 7 (shas %yoho-notification eny.bowl))
   =/  =rope:hark    [~ ~ q.byk.bowl /(scot %p who)/[dap.bowl]]
   =/  =action:hark  [%add-yarn & & id rope now.bowl con /[dap.bowl] ~]

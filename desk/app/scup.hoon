@@ -36,7 +36,7 @@
   ++  on-init
     ^-  (quip card _this)
     :_  this
-    [%pass /eyre/connect %arvo %e %connect [~ /[dap.bowl]] dap.bowl]~
+    [%pass /eyre/connect %arvo %e %connect `/[dap.bowl] dap.bowl]~
   ++  on-save  !>(state)
   ++  on-load  |=(=vase `this(state !<(state-0 vase)))
   ++  on-poke

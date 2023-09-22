@@ -1,5 +1,5 @@
 /-  *clamore
-/+  rudder, ahoy, ahoy-style
+/+  rudder, ahoy-style
 ^-  (page:rudder records command)
 =<
 |_  [=bowl:gall =order:rudder records]
@@ -131,7 +131,7 @@
         ==
         ::  last-contact
         ;td(align "right")
-          ; {<(~(last-contact ahoy bowl) ship)>}
+          ; {<(last-contact:cor ship)>}
         ==
       ==
     ==
@@ -171,7 +171,7 @@
         ==
         ::  last-contact
         ;td(align "right")
-          ; {<(~(last-contact ahoy bowl) ship)>}
+          ; {<(last-contact:cor ship)>}
         ==
       ==
     ==
@@ -186,6 +186,7 @@
     ?>  ?=([%known *] ss)
     ?~  route.+.ss  ~
     direct.u.route.ss
+  ::
   --  ::  |^
 --    ::  |_
 ::
@@ -206,4 +207,10 @@
   ^-  (set ship)
   ?.  .^(? %gu /[our]/pals/[now]/$)  ~
   .^((set ship) %gx /[our]/pals/[now]/leeches/noun)
+::
+++  last-contact
+  |=  =ship
+  ^-  (unit @da)
+  =+  [our=(scot %p our.bowl) now=(scot %da now.bowl) who=(scot %p ship)]
+  .^((unit @da) %ax /[our]//[now]/peers/[who]/last-contact)
 --
