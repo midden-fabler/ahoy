@@ -159,8 +159,10 @@
   |=  =ship
   ^+  cor
   =.  cor  (emil (make-appt ship))
-  =.  cor  (emit [%pass /hood %agent [ship %hood] %poke helm-pack+!>(~)])
-  (emit [%pass /hood %agent [ship %hood] %poke helm-meld+!>(~)])
+  (emit [%pass /hood %agent [ship %hood] %poke helm-pack+!>(~)])
+  ::  meld disabled. memory usage too high.
+  ::
+  ::  (emit [%pass /hood %agent [ship %hood] %poke helm-meld+!>(~)])
 ::
 ++  make-appt
   |=  =ship

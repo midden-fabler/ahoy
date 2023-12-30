@@ -62,7 +62,7 @@
 
         ;h4:"ship maintenance"
 
-        schedule a recurring pack and meld
+        schedule a recurring pack
 
         e.g. every day at 08:30 UTC: ~d1 ~h8.m30
 
