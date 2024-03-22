@@ -48,9 +48,6 @@
         ;a/"/scup"
           ;h2:"%scup"
         ==
-        ;a/"/doot"
-          ;h2:"%doot"
-        ==
         ;a/"/clamore"
           ;h2:"%clamore"
         ==
